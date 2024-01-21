@@ -58,26 +58,25 @@ def cnf_negation(matrix:np.array, n_variables:int) -> np.array:
     clauses = clauses[1:]
   return simplify_cnf_formula(final, n_variables)
 def describe_network(bnn):
-   for b in range(bnn.num_internal_blocks):
-      for layer in bnn.blocks.layers:
+      for layer in bnn.layers:
          print('Input :',type(layer), layer.get_weights())
          print('Output :', layer.output)
 
 def encode_network(the_model, input_file="BNN_CNFf.cnf") -> str:
     beginning = time.monotonic()
-    n_inputs = the_model.blocks.layers[1].input_shape[1]
+    n_inputs = the_model.layers[1].input_shape[1]
     inputs = [create_array(i, n_inputs) for i in range(1, n_inputs + 1)]
     n_layer = 1  # counter for tracking the current layer being processed
-    print('Num layers:', len(the_model.blocks.layers))
+    print('Num layers:', len(the_model.layers))
     
     # Removed the first loop over blocks
-    for layer_idx, layer in enumerate(the_model.blocks.layers):
+    for layer_idx, layer in enumerate(the_model.layers):
         print(f'Layer {layer_idx}: {layer.__class__.__name__}')
         the_weights = layer.get_weights()
         outputs = []
-        for id_neuron in range(layer.num_neurons):
-            print('Num neuron in layer', layer.num_neurons)
-            print(f'{seconds_separator(time.monotonic() - beginning)}   Layer: {len(the_model.blocks.layers) - 1}/{n_layer} | Neuron: {id_neuron + 1}/{layer.num_neurons}')
+        for id_neuron in range(layer.units):
+            print('Num neuron in layer', layer.units)
+            print(f'{seconds_separator(time.monotonic() - beginning)}   Layer: {len(the_model.layers) - 1}/{n_layer} | Neuron: {id_neuron + 1}/{layer.units}')
             print('the_weights[0] ', type(layer), layer.get_weights()[0])
             print(f"Shape of the_weights[0]: {the_weights[0].shape}")
             print(f"Value of id_neuron: {id_neuron}")
@@ -89,7 +88,7 @@ def encode_network(the_model, input_file="BNN_CNFf.cnf") -> str:
             print('D Values:', D)
             previous = {}
             for id_input in range(len(inputs)):
-                if (layer == the_model.blocks.layers[-1]): print(f'{seconds_separator(time.monotonic() - beginning)}   Working with the first {id_input + 1} inputs')
+                if (layer == the_model.layers[-1]): print(f'{seconds_separator(time.monotonic() - beginning)}   Working with the first {id_input + 1} inputs')
                 actual = {}
                 if (the_weights[0][id_input, id_neuron] == 1):
                     x = inputs[id_input]

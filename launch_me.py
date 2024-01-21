@@ -45,9 +45,24 @@ def get_num_variables_and_clauses_from_cnf(cnf_filename):
     print('num clauses :', num_clauses)
                 
     return num_variables, num_clauses
-def train_me(model, file):
-     file = 'C:\\Users\\freun\Desktop\WS2\Masterarbeit\\from_Scratch\\training\\Other_Test\\data3.txt'
-     with open(file, "r") as file:
+
+if __name__ == "__main__":
+     #bnn_model = BNN(num_dense_layer=2,num_neuron_in_dense_layer=5,num_neuron_output_layer=1)
+     #dimacs_file_path=encode_network(bnn_model)
+     #describe_network(bnn_model)
+
+     #dimacs_file_path = 'output_final.cnf'
+     #n_vars = 10 
+     #CNF to BDD
+     #cnf_formula = read_dimacs_file(dimacs_file_path)
+     #output_file_path = 'output_bdd_info.txt'
+
+     #bdd_compiler = BDD_Compiler(n_vars, cnf_formula)
+     #bdd = bdd_compiler.compile(output_file=output_file_path)
+          #bdd.print_info(n_vars)
+        
+     datafile = 'C:\\Users\\freun\Desktop\WS2\Masterarbeit\\from_Scratch\\training\\Other_Test\\data3.txt'
+     with open(datafile, "r") as file:
         lines = file.readlines()
 
      X_train_sequences = []
@@ -80,14 +95,14 @@ def train_me(model, file):
      model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
      initial_weights = model.get_weights()
      model.save_weights("initial_weights.h5")
-     history=model.fit(X_train, Y_train, epochs=300, batch_size=20, validation_split=0.2)
+     history=model.fit(X_train, Y_train, epochs=250, batch_size=20, validation_split=0.2)
      test_loss, test_accuracy = model.evaluate(X_test, Y_test)
      print(f'Test Accuracy: {test_accuracy * 100:.2f}%')
 
      model.save("BNN_model.h5")
-     file = 'weights_after_training.h5'
+     datafile = 'weights_after_training.h5'
 
-     model.save_weights(file)
+     model.save_weights(datafile)
      describe_network(model)
      plt.figure(figsize=(12, 6))
 
@@ -111,23 +126,6 @@ def train_me(model, file):
 
      plt.tight_layout()
      plt.show()
-
-if __name__ == "__main__":
-     #bnn_model = BNN(num_dense_layer=2,num_neuron_in_dense_layer=5,num_neuron_output_layer=1)
-     #dimacs_file_path=encode_network(bnn_model)
-     #describe_network(bnn_model)
-
-     #dimacs_file_path = 'output_final.cnf'
-     #n_vars = 10 
-     #CNF to BDD
-     #cnf_formula = read_dimacs_file(dimacs_file_path)
-     #output_file_path = 'output_bdd_info.txt'
-
-     #bdd_compiler = BDD_Compiler(n_vars, cnf_formula)
-     #bdd = bdd_compiler.compile(output_file=output_file_path)
-          #bdd.print_info(n_vars)
-        
-    
      """
      output_layer_weights = model.layers[-1].get_weights()[0]
      binarized_weights = np.all(np.isin(output_layer_weights, [-1, 1]))

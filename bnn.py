@@ -36,13 +36,13 @@ class BNN(models.Sequential):
             kwargs = dict(input_quantizer="ste_sign",
               kernel_quantizer="ste_sign",
               kernel_constraint="weight_clip",
-              use_bias=False)
+              use_bias=True)
 
 
             self.add(InputLayer(input_shape=(input_dim,)))
             self.add(QuantDense(num_neuron_in_hidden_dense_layer, input_shape=(input_dim,),  kernel_quantizer="ste_sign",
                           kernel_constraint="weight_clip",
-                          use_bias=False))
+                          use_bias=True))
             self.add(BatchNormalization(momentum=0.999, scale=False))
             #self.add(tf.keras.layers.Activation("relu"))
             self.add(Dropout(0.2))
@@ -54,7 +54,7 @@ class BNN(models.Sequential):
             self.add(Dropout(0.2))
             self.add(QuantDense(num_neuron_in_hidden_dense_layer, activation='linear', use_bias=True))
             self.add(BatchNormalization(momentum=0.999, scale=False))
-            #self.add(tf.keras.layers.Activation("relu"))
+            self.add(tf.keras.layers.Activation("relu"))
             #self.add(Lambda(lambda x: tf.sign))
             self.add(Dropout(0.3))
             #self.add(Activation("ste_sign"))
