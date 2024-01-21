@@ -36,7 +36,7 @@ print("Y_train shape:", Y_train.shape)
 
 opt=larq.optimizers.Bop(threshold=1e-08, gamma=0.0001, name="Bop")
 
-model = BNN(num_neuron_in_hidden_dense_layer=X_train.shape[1], num_neuron_output_layer=Y_train.shape[1],input_dim=X_train.shape[1], output_dim=Y_train.shape[1])
+model = BNN(num_neuron_in_hidden_dense_layer=X_train.shape[1], num_neuron_output_layer=Y_train.shape[1],input_dim=X_train.shape[1], output_dim=len(np.unique(Y_train,axis=0)))
 trained_weights ="weights_after_training.h5"
 model.load_weights(trained_weights)
 print('Weights loaded successfully !!! ')
