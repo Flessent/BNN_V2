@@ -86,16 +86,19 @@ if __name__ == "__main__":
      X_train_padded = pad_sequences(X_train_sequences, padding='post')
 
      X_train, X_test, Y_train, Y_test = train_test_split(X_train_padded, Y_train, test_size=0.2, random_state=42)
+     print('Y_train :',Y_train[:5])
 
      print("X_train shape:", X_train.shape)
      print("Y_train shape:", Y_train.shape)
+     print('Unique :', len(np.unique(Y_train,axis=0)))
+     print('TEST :',Y_train.shape[1])
 
      opt=larq.optimizers.Bop(threshold=1e-08, gamma=0.0001, name="Bop")
-     model = BNN(num_neuron_in_hidden_dense_layer=X_train.shape[1], num_neuron_output_layer=Y_train.shape[1],input_dim=X_train.shape[1], output_dim=Y_train.shape[1])
+     model = BNN(num_neuron_in_hidden_dense_layer=X_train.shape[1], num_neuron_output_layer=Y_train.shape[1],input_dim=X_train.shape[1], output_dim=len(np.unique(Y_train,axis=0)))
      model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
      initial_weights = model.get_weights()
      model.save_weights("initial_weights.h5")
-     history=model.fit(X_train, Y_train, epochs=250, batch_size=20, validation_split=0.2)
+     history=model.fit(X_train, Y_train, epochs=50, batch_size=20, validation_split=0.2)
      test_loss, test_accuracy = model.evaluate(X_test, Y_test)
      print(f'Test Accuracy: {test_accuracy * 100:.2f}%')
 

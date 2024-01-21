@@ -55,6 +55,7 @@ class BNN(models.Sequential):
             self.add(QuantDense(num_neuron_in_hidden_dense_layer, activation='linear', use_bias=True))
             self.add(BatchNormalization(momentum=0.999, scale=False))
             self.add(tf.keras.layers.Activation("relu"))
+            self.add(QuantDense(num_neuron_in_hidden_dense_layer, activation='linear', use_bias=True))
             #self.add(Lambda(lambda x: tf.sign))
             self.add(Dropout(0.3))
             #self.add(Activation("ste_sign"))
