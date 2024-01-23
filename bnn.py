@@ -5,7 +5,6 @@ from tensorflow.keras import layers, constraints, initializers, models
 import numpy as np
 from tensorflow.keras.initializers import RandomNormal
 
-#from activations import*
 from tensorflow.keras.models import Sequential
 
 import larq as lq
