@@ -1,3 +1,6 @@
+from tensorflow.keras.utils import to_categorical
+from sklearn.metrics import precision_score, recall_score, f1_score
+from tensorflow.keras.callbacks import EarlyStopping
 from larq.layers import QuantDense
 from keras.callbacks import LearningRateScheduler
 from sklearn.metrics import accuracy_score
@@ -19,6 +22,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tensorflow.keras import  optimizers
 from tensorflow.keras.optimizers import Adam
+from sklearn.preprocessing import OneHotEncoder
 
 def read_and_print_file(file_path):
     try:
@@ -45,71 +49,87 @@ def get_num_variables_and_clauses_from_cnf(cnf_filename):
     print('num clauses :', num_clauses)
                 
     return num_variables, num_clauses
+def replace_question_mark(sequence):
+    return [1 if bit == '?' else int(bit) for bit in sequence]
+
 
 if __name__ == "__main__":
-     #bnn_model = BNN(num_dense_layer=2,num_neuron_in_dense_layer=5,num_neuron_output_layer=1)
-     #dimacs_file_path=encode_network(bnn_model)
-     #describe_network(bnn_model)
+          
+     datafile = 'C:\\Users\\freun\Desktop\WS2\Masterarbeit\\from_Scratch\\training\\Other_Test\\best_params_45_prozent_2\\data3.txt'
+     data = np.loadtxt(datafile, dtype=str)  
 
-     #dimacs_file_path = 'output_final.cnf'
-     #n_vars = 10 
-     #CNF to BDD
-     #cnf_formula = read_dimacs_file(dimacs_file_path)
-     #output_file_path = 'output_bdd_info.txt'
+     X = data[:, 0] 
+     Y = data[:, 1] 
 
-     #bdd_compiler = BDD_Compiler(n_vars, cnf_formula)
-     #bdd = bdd_compiler.compile(output_file=output_file_path)
-          #bdd.print_info(n_vars)
-        
-     datafile = 'C:\\Users\\freun\Desktop\WS2\Masterarbeit\\from_Scratch\\training\\Other_Test\\data3.txt'
-     with open(datafile, "r") as file:
-        lines = file.readlines()
+     X = np.core.defchararray.replace(X, '?', '1')
 
-     X_train_sequences = []
-     Y_train = []
+     df = pd.DataFrame({'X': X, 'Y': Y})
 
-     for line in lines:
-        parts = line.strip().split()
+     X = np.array([list(map(int, binary_string)) for binary_string in df['X']])
 
-        
-        left_data = [int(bit) for bit in parts[0]]
-        right_data = [int(bit) for bit in parts[1]]
+     y = np.array([int(label, 2) for label in df['Y']])
 
-        X_train_sequences.append(left_data)
-        Y_train.append(right_data)
+     y_one_hot = to_categorical(y, num_classes=16)
+     print('X :', X[:10], X.shape)
+     print('Y encoded :', y_one_hot[:10], y_one_hot.shape)
 
-     
-     X_train_sequences = np.array(X_train_sequences, dtype=np.float32)
-     Y_train = np.array(Y_train, dtype=np.float32)
 
-   
-     X_train_padded = pad_sequences(X_train_sequences, padding='post')
+     X_train, X_test, Y_train, Y_test = train_test_split(X, y_one_hot, test_size=0.2, random_state=42)
 
-     X_train, X_test, Y_train, Y_test = train_test_split(X_train_padded, Y_train, test_size=0.2, random_state=42)
-     print('Y_train :',Y_train[:5])
+     print('X_train :', X_train[:10])
+     print('Y_train :',Y_train[:10])
 
      print("X_train shape:", X_train.shape)
      print("Y_train shape:", Y_train.shape)
      print('Unique :', len(np.unique(Y_train,axis=0)))
-     print('TEST :',Y_train.shape[1])
 
      opt=larq.optimizers.Bop(threshold=1e-08, gamma=0.0001, name="Bop")
-     model = BNN(num_neuron_in_hidden_dense_layer=X_train.shape[1], num_neuron_output_layer=Y_train.shape[1],input_dim=X_train.shape[1], output_dim=len(np.unique(Y_train,axis=0)))
-     model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
+     model = BNN(num_neuron_in_hidden_dense_layer=18, num_neuron_output_layer=len(np.unique(Y_train,axis=0)), input_dim=18, output_dim=len(np.unique(Y_train,axis=0)))
+
+     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
      initial_weights = model.get_weights()
      model.save_weights("initial_weights.h5")
-     history=model.fit(X_train, Y_train, epochs=50, batch_size=20, validation_split=0.2)
+     early_stopping = EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=True)
+     #Y_train_encoded = np.argmax(Y_train, axis=1)
+     #Y_test_encoded = np.argmax(Y_test_encoded, axis=1)
+
+     history = model.fit(X_train, Y_train, epochs=300, batch_size=5, validation_data=(X_test, Y_test), callbacks=[early_stopping])
+
      test_loss, test_accuracy = model.evaluate(X_test, Y_test)
      print(f'Test Accuracy: {test_accuracy * 100:.2f}%')
+     predictions = model.predict(X_test)
+
+     # Convert the predictions to binary values (assuming a threshold of 0.5)
+     binary_predictions = (predictions >= 0.5).astype(int)
+     precision = precision_score(Y_test, binary_predictions, average='micro')
+     recall = recall_score(Y_test, binary_predictions, average='micro')
+     f1 = f1_score(Y_test, binary_predictions, average='micro')
+     print(f'Precision: {precision:.4f}')
+     print(f'Recall: {recall:.4f}')
+     print(f'F1 Score: {f1:.4f}')
+     correct_predictions = np.sum(np.all(binary_predictions == Y_test, axis=1))
+     total_samples = len(Y_test)
+     print(f'Correct Predictions: {correct_predictions} out of {total_samples}')
+
+     # Display the predictions
+     print("Predictions:")
+     print(binary_predictions)
+     print('True values')
+     print(Y_test)
+     print('X_train')
+     print(X_train[:10])
+     
 
      model.save("BNN_model.h5")
      datafile = 'weights_after_training.h5'
 
      model.save_weights(datafile)
+     lq.models.summary(model)
      describe_network(model)
      plt.figure(figsize=(12, 6))
 
     # Plot training & validation accuracy values
+     """
      plt.subplot(1, 2, 1)
      plt.plot(history.history['accuracy'])
      plt.plot(history.history['val_accuracy'])
@@ -128,44 +148,4 @@ if __name__ == "__main__":
      plt.legend(['Train', 'Validation'], loc='upper left')
 
      plt.tight_layout()
-     plt.show()
-     """
-     output_layer_weights = model.layers[-1].get_weights()[0]
-     binarized_weights = np.all(np.isin(output_layer_weights, [-1, 1]))
-     if binarized_weights:
-        print(f"The weights of layer  are binarized.")
-     else:
-        print(f"The weights of layer are NOT binarized.")
-     output_layer_weights = model.layers[-1].get_weights()[0] 
-     print(output_layer_weights)
-     """
-
-
-     """
-     n_vars,num_clauses=get_num_variables_and_clauses_from_cnf(dimacs_file_path)
-     ddbcsfi_instance = dDBCSFi_2(n_variables=n_vars, perceptron=bnn_model)
-
-     beginning = time.monotonic()
-     #cnff_name = 'output_final.cnf'
-     #cnff_name = encode_network(bnn_model, cnff_name)
-     read_and_print_file(dimacs_file_path)
-     duration = time.monotonic() - beginning
-     print("Time taken to create the formula:", seconds_separator(duration),"\n")
-
-     beginning = time.monotonic()
-     mgr = SddManager()
-     print('Me ????????????????????')
-     ssd_manager, node = mgr.from_cnf_file(bytes(dimacs_file_path, encoding='utf-8'))
-     duration = time.monotonic() - beginning
-     print("Time taken to create the SDD:", seconds_separator(duration),"\n")
-
-     beginning = time.monotonic()
-     The_circuit = dDBCSFi_2(n_vars, SDD=node) # 10 is the number of inputs features or neurons
-     The_circuit.compile_bnn()
-     duration = time.monotonic() - beginning
-     print("Time taken to create the dDBCSFi(2):", seconds_separator(duration))
-     beginning = time.monotonic()
-     The_circuit.corroborate_equivalence(bnn_model, -1)
-     duration = time.monotonic() - beginning
-     print("Time taken to verify the equivalence of dDBCSFi(2) with the BNN:", seconds_separator(duration))
-     print("\nThe circuit has", The_circuit.count_nodes(), "nodes") """
+     plt.show()"""

@@ -4,6 +4,7 @@ import sys
 from itertools import chain
 import time
 from pysat.solvers import Glucose3
+from larq.layers import QuantDense
 def seconds_separator(seconds_passed):
   duration = seconds_passed
   hours = int(duration//3600)
@@ -61,8 +62,9 @@ def describe_network(bnn):
       for layer in bnn.layers:
          print('Input :',type(layer), layer.get_weights())
          print('Output :', layer.output)
-
 def encode_network(the_model, input_file="BNN_CNFf.cnf") -> str:
+    
+
     beginning = time.monotonic()
     n_inputs = the_model.layers[1].input_shape[1]
     inputs = [create_array(i, n_inputs) for i in range(1, n_inputs + 1)]
@@ -71,46 +73,48 @@ def encode_network(the_model, input_file="BNN_CNFf.cnf") -> str:
     
     # Removed the first loop over blocks
     for layer_idx, layer in enumerate(the_model.layers):
-        print(f'Layer {layer_idx}: {layer.__class__.__name__}')
-        the_weights = layer.get_weights()
-        outputs = []
-        for id_neuron in range(layer.units):
-            print('Num neuron in layer', layer.units)
-            print(f'{seconds_separator(time.monotonic() - beginning)}   Layer: {len(the_model.layers) - 1}/{n_layer} | Neuron: {id_neuron + 1}/{layer.units}')
-            print('the_weights[0] ', type(layer), layer.get_weights()[0])
-            print(f"Shape of the_weights[0]: {the_weights[0].shape}")
-            print(f"Value of id_neuron: {id_neuron}")
-            print('BIAS :', (-the_weights[1][id_neuron]))
-            weights_col = the_weights[0][:, id_neuron]
-            print('SUM OF WEIGHTS :', weights_col.sum())
-            print('LAST TERM : ', (the_weights[0][:, id_neuron] == -1).sum())
-            D = ceil((-the_weights[1][id_neuron] + the_weights[0][:, id_neuron].sum()) / 2) + (weights_col == -1).sum()
-            print('D Values:', D)
-            previous = {}
-            for id_input in range(len(inputs)):
-                if (layer == the_model.layers[-1]): print(f'{seconds_separator(time.monotonic() - beginning)}   Working with the first {id_input + 1} inputs')
-                actual = {}
-                if (the_weights[0][id_input, id_neuron] == 1):
-                    x = inputs[id_input]
-                else:
-                    x = cnf_negation(inputs[id_input], len(inputs))
-                for d in range(D):
-                    if (id_input < d): break
-                    if (len(inputs) < id_input + 1 + D - (d + 1)): continue
-                    if (d == 0):
-                        if (id_input == 0):
-                            actual[d] = x
-                        else:
-                            actual[d] = disjunction_cnfs(x, previous[d], len(inputs))
-                    elif (id_input == d):
-                        actual[d] = conjunction_cnfs(x, previous[d - 1], len(inputs))
+        # Add an IF statement to check if the layer is a QuantDense layer
+        if isinstance(layer, QuantDense):  # Replace QuantDense with the actual name of your QuantDense layer class
+            print(f'Layer {layer_idx}: {layer.__class__.__name__}')
+            the_weights = layer.get_weights()
+            outputs = []
+            for id_neuron in range(layer.units):
+                print('Num neuron in layer', layer.units)
+                print(f'{seconds_separator(time.monotonic() - beginning)}   Layer: {len(the_model.layers) - 1}/{n_layer} | Neuron: {id_neuron + 1}/{layer.units}')
+                print('the_weights[0] ', type(layer), layer.get_weights()[0])
+                print(f"Shape of the_weights[0]: {the_weights[0].shape}")
+                print(f"Value of id_neuron: {id_neuron}")
+                print('BIAS :', (-the_weights[1][id_neuron]))
+                weights_col = the_weights[0][:, id_neuron]
+                print('SUM OF WEIGHTS :', weights_col.sum())
+                print('LAST TERM : ', (the_weights[0][:, id_neuron] == -1).sum())
+                D = ceil((-the_weights[1][id_neuron] + the_weights[0][:, id_neuron].sum()) / 2) + (weights_col == -1).sum()
+                print('D Values:', D)
+                previous = {}
+                for id_input in range(len(inputs)):
+                    if (layer == the_model.layers[-1]): print(f'{seconds_separator(time.monotonic() - beginning)}   Working with the first {id_input + 1} inputs')
+                    actual = {}
+                    if (the_weights[0][id_input, id_neuron] == 1):
+                        x = inputs[id_input]
                     else:
-                        temp = conjunction_cnfs(x, previous[d - 1], len(inputs))
-                        actual[d] = disjunction_cnfs(temp, previous[d], len(inputs))
-                previous = actual
-            outputs += [previous[D - 1].astype(dtype=np.int8)]
-        inputs = outputs
-        n_layer += 1
+                        x = cnf_negation(inputs[id_input], len(inputs))
+                    for d in range(D):
+                        if (id_input < d): break
+                        if (len(inputs) < id_input + 1 + D - (d + 1)): continue
+                        if (d == 0):
+                            if (id_input == 0):
+                                actual[d] = x
+                            else:
+                                actual[d] = disjunction_cnfs(x, previous[d], len(inputs))
+                        elif (id_input == d):
+                            actual[d] = conjunction_cnfs(x, previous[d - 1], len(inputs))
+                        else:
+                            temp = conjunction_cnfs(x, previous[d - 1], len(inputs))
+                            actual[d] = disjunction_cnfs(temp, previous[d], len(inputs))
+                    previous = actual
+                outputs += [previous[D - 1].astype(dtype=np.int8)]
+            inputs = outputs
+            n_layer += 1
 
     print(f'Total time taken: {seconds_separator(time.monotonic() - beginning)}')
     dimacs_cnf = inputs[-1]
