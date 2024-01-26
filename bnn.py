@@ -82,17 +82,17 @@ class BNN(models.Sequential):
             input_quantizer="ste_sign",
             kernel_quantizer="ste_sign",
             kernel_constraint="weight_clip",
-            use_bias=True
+            use_bias=False
         )
         print('Input dim : ', input_dim)
 
         self.add(InputLayer(input_shape=(input_dim,)))
         self.add(QuantDense(num_neuron_in_hidden_dense_layer, input_shape=(input_dim,),kernel_quantizer="ste_sign",
                                 kernel_constraint="weight_clip"))
-        self.add(BatchNormalization(momentum=0.999, scale=False))
-        self.add(QuantDense(num_neuron_in_hidden_dense_layer,   **kwargs))
-        self.add(BatchNormalization(momentum=0.999, scale=False))
-        self.add(QuantDense(num_neuron_in_hidden_dense_layer, **kwargs))
+        #self.add(BatchNormalization(momentum=0.999, scale=False))
+        #self.add(QuantDense(num_neuron_in_hidden_dense_layer,   **kwargs))
+        #self.add(BatchNormalization(momentum=0.999, scale=False))
+        #self.add(QuantDense(num_neuron_in_hidden_dense_layer, **kwargs))
         self.add(BatchNormalization(momentum=0.999, scale=False))          
         self.add(QuantDense(num_neuron_in_hidden_dense_layer,  **kwargs))
         self.add(BatchNormalization(momentum=0.999, scale=False))

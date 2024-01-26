@@ -83,24 +83,24 @@ if __name__ == "__main__":
      print("Y_train shape:", Y_train.shape)
      print('Unique :', len(np.unique(Y_train,axis=0)))
 
-     opt=larq.optimizers.Bop(threshold=1e-08, gamma=0.0001, name="Bop")
+     opt=larq.optimizers.Bop(threshold=1e-08, gamma=0.01, name="Bop")
      model = BNN(num_neuron_in_hidden_dense_layer=18, num_neuron_output_layer=len(np.unique(Y_train,axis=0)), input_dim=18, output_dim=len(np.unique(Y_train,axis=0)))
 
      model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
      initial_weights = model.get_weights()
      model.save_weights("initial_weights.h5")
-     early_stopping = EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=True)
+     early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
      #Y_train_encoded = np.argmax(Y_train, axis=1)
      #Y_test_encoded = np.argmax(Y_test_encoded, axis=1)
 
-     history = model.fit(X_train, Y_train, epochs=300, batch_size=5, validation_data=(X_test, Y_test), callbacks=[early_stopping])
+     history = model.fit(X_train, Y_train, epochs=15, batch_size=5, validation_data=(X_test, Y_test), callbacks=[early_stopping])
 
      test_loss, test_accuracy = model.evaluate(X_test, Y_test)
      print(f'Test Accuracy: {test_accuracy * 100:.2f}%')
      predictions = model.predict(X_test)
 
      # Convert the predictions to binary values (assuming a threshold of 0.5)
-     binary_predictions = (predictions >= 0.5).astype(int)
+     binary_predictions = (predictions >= 0.4).astype(int)
      precision = precision_score(Y_test, binary_predictions, average='micro')
      recall = recall_score(Y_test, binary_predictions, average='micro')
      f1 = f1_score(Y_test, binary_predictions, average='micro')
